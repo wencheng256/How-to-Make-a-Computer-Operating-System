@@ -1,3 +1,7 @@
+## 从0到1打造自己的操作系统
+
+### 翻译：by mario
+
 How to Make a Computer Operating System
 =======================================
 
