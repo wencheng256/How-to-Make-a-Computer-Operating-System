@@ -1,12 +1,19 @@
-## Chapter 3: First boot with GRUB
 
-#### How the boot works?
+## 第三章: 使用 GRUB 初始化引导
 
-When an x86-based computer is turned on, it begins a complex path to get to the stage where control is transferred to our kernel's "main" routine (`kmain()`). For this course, we are only going to consider the BIOS boot method and not it's successor (UEFI).
+#### 引导是一个怎么样的过程？
 
-The BIOS boot sequence is: RAM detection -> Hardware detection/Initialization -> Boot sequence.
+当x86架构的电脑启动，它将进入一个非常复杂的过程，直到将控制权转移到我们的内核主程序手中 (`kmain()`). 本课程中，我们只考虑BIOS引导方法的情况，而不考虑他的后继者（UEFI）。
 
-The most important step for us is the "Boot sequence", where the BIOS is done with its initialization and tries to transfer control to the next stage of the bootloader process.
+
+BIOS 引导的顺序是：RAM 探查->硬件探查/初始化->引导序列
+
+
+对我们来说，最重要的部分就是“引导序列”。
+引导序列指的是：当BIOS完成了初始化过程，准备将控制权转移到引导装载程序的下一阶段的过程。
+
+During the "Boot sequence", the BIOS will try to determine a "boot device" (e.g. floppy disk, hard-disk, CD, USB flash memory device or network). Our Operating System will initially boot from the hard-disk (but it will be possible to boot it from a CD or a USB flash memory device in future). A device is considered bootable if the bootsector contains the valid signature bytes `0x55` and `0xAA` at offsets 511 and 512 respectively (called the magic bytes of the Master Boot Record, also known as the MBR). This signature is represented (in binary) as 0b1010101001010101. The alternating bit pattern was thought to be a protection against certain failures (drive or controller). If this pattern is garbled or 0x00, the device is not considered bootable.
+
 
 During the "Boot sequence", the BIOS will try to determine a "boot device" (e.g. floppy disk, hard-disk, CD, USB flash memory device or network). Our Operating System will initially boot from the hard-disk (but it will be possible to boot it from a CD or a USB flash memory device in future). A device is considered bootable if the bootsector contains the valid signature bytes `0x55` and `0xAA` at offsets 511 and 512 respectively (called the magic bytes of the Master Boot Record, also known as the MBR). This signature is represented (in binary) as 0b1010101001010101. The alternating bit pattern was thought to be a protection against certain failures (drive or controller). If this pattern is garbled or 0x00, the device is not considered bootable.
 
