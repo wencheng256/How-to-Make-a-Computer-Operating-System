@@ -1,35 +1,39 @@
-## Chapter 1: Introduction to the x86 architecture and about our OS
 
-### What is the x86 architecture?
 
-> The term x86 denotes a family of backward compatible instruction set architectures based on the Intel 8086 CPU.
+## 第一章: X86架构和我们的操作系统
 
-The x86 architecture is the most common instruction set architecture since its introduction in 1981 for the IBM PC. A large amount of software, including operating systems (OS's) such as DOS, Windows, Linux, BSD, Solaris and Mac OS X, function with x86-based hardware.
+### 什么是X86架构?
 
-In this course we are not going to design an operating system for the x86-64 architecture but for x86-32, thanks to backward compatibility, our OS will be compatible with our newer PCs (but take caution if you want to test it on your real machine).
+> X86是指的一族基于英特尔8086CPU的兼容指令
 
-### Our Operating System
+自1981年IBM引入以来，X86已经成为最为常见的架构指令集。有大量的软件，包括操作系统（OS，以后简称OS）例如：DOS、Windows、Linux、BSD、Solaris和MacOs X 都是运行于以x86为基础的硬件的。
 
-The goal is to build a very simple UNIX-based operating system in C++, but the goal is not to just build a "proof-of-concept". The OS should be able to boot, start a userland shell and be extensible.
+本课程呢将设计一款x86架构的OS而不是x86-64架构的OS，得益于向后兼容性，我们将开发的OS可以在新的PC上运行（当然，你如果想把它运行在物理机上另当别论）
 
-The OS will be built for the x86 architecture, running on 32 bits, and compatible with IBM PCs.
+###我们的OS
 
-**Specifications:**
+我们的目标将是使用Cpp搭建一款简单的基于Unix的OS，但是它并不会仅仅存在于理论当中，它能被装载并且启动一个用户终端，而且可被扩展。
 
-* Code in C++
-* x86, 32 bit architecture
-* Boot with Grub
-* Kind of modular system for drivers
-* Kind of UNIX style
-* Multitasking
-* ELF executable in userland
-* Modules (accessible in userland using /dev/...) :
-    * IDE disks
-    * DOS partitions
-    * Clock
-    * EXT2 (read only)
-    * Boch VBE
-* Userland :
-    * API Posix
+我们的OS将为x86架构开发，并且可以运行于32位IBM兼容机。
+
+
+**规格:**
+
+* 编程语言：Cpp
+* x86 32位架构
+* 使用GNU Grub引导
+* 一些模块化的驱动
+* 有些UNIX风格
+* 多任务
+* 终端的ELF可执行文件
+* 
+* 模块 (可以在终端被查看 /dev/...) :
+    * IDE 硬盘
+    * DOS 分区
+    * 时钟
+    * EXT2文件系统 (只读)
+    * Boch 虚拟硬件
+* 终端:
+    * API 可可移植操作系统皆苦
     * LibC
-    * "Can" run a shell or some executables (e.g., lua)
+    * 可以运行C和一些可执行文件(比如 lua)
