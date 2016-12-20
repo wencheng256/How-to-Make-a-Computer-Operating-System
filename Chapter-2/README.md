@@ -60,6 +60,6 @@ make all
 make run
 ```
 
-可以在 [QEMU Emulator Documentation](http://wiki.qemu.org/download/qemu-doc.html)查看qemu的文档
+可以在 [QEMU Emulator Documentation](http://wiki.qemu.org/download/qemu-doc.html)查看qemu的文档 
 
 你可以使用Ctrl-a命令退出模拟器
