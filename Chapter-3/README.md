@@ -6,43 +6,44 @@
 当x86架构的电脑启动，它将进入一个非常复杂的过程，直到将控制权转移到我们的内核主程序手中 (`kmain()`). 本课程中，我们只考虑BIOS引导方法的情况，而不考虑他的后继者（UEFI）。
 
 
-BIOS 引导的顺序是：RAM 探查->硬件探查/初始化->引导序列
+BIOS 引导的顺序是：RAM 探查->硬件探查/初始化->“引导序列”
 
 
 对我们来说，最重要的部分就是“引导序列”。
-引导序列指的是：当BIOS完成了初始化过程，准备将控制权转移到引导装载程序的下一阶段的过程。
-
-During the "Boot sequence", the BIOS will try to determine a "boot device" (e.g. floppy disk, hard-disk, CD, USB flash memory device or network). Our Operating System will initially boot from the hard-disk (but it will be possible to boot it from a CD or a USB flash memory device in future). A device is considered bootable if the bootsector contains the valid signature bytes `0x55` and `0xAA` at offsets 511 and 512 respectively (called the magic bytes of the Master Boot Record, also known as the MBR). This signature is represented (in binary) as 0b1010101001010101. The alternating bit pattern was thought to be a protection against certain failures (drive or controller). If this pattern is garbled or 0x00, the device is not considered bootable.
+引导序列指的是：当BIOS完成了初始化过程，准备将控制权转移到一个引导装载程序的过程。
 
 
-During the "Boot sequence", the BIOS will try to determine a "boot device" (e.g. floppy disk, hard-disk, CD, USB flash memory device or network). Our Operating System will initially boot from the hard-disk (but it will be possible to boot it from a CD or a USB flash memory device in future). A device is considered bootable if the bootsector contains the valid signature bytes `0x55` and `0xAA` at offsets 511 and 512 respectively (called the magic bytes of the Master Boot Record, also known as the MBR). This signature is represented (in binary) as 0b1010101001010101. The alternating bit pattern was thought to be a protection against certain failures (drive or controller). If this pattern is garbled or 0x00, the device is not considered bootable.
+根据“引导序列”，BIOS将会确定一个“引导设备”(例如：软盘、硬盘、CD、USB闪存、或者网络设备)。我们的OS最初会从硬盘中引导 （但是以后也可能从CD或者一个USB闪存中引导）如果一个设备的第511和512字节分别包含指定的签名`0x55`和`0xAA`，那么这个设备将会被认为是可引导设备(被称作主引导记录的魔术代码，或者被称为 MBR）。签名的二进制编码为 `0b1010101001010101`。这些交替的01位被视作是应对某些特定错误的保护，如果这串序列被篡改或者抹除，那么这个设备不会被认作引导设备。
 
-BIOS physically searches for a boot device by loading the first 512 bytes from the bootsector of each device into physical memory, starting at the address `0x7C00` (1 KiB below the 32 KiB mark). When the valid signature bytes are detected, BIOS transfers control to the `0x7C00` memory address (via a jump instruction) in order to execute the bootsector code.
+BIOS会依次读取每一个设备的前512字节到物理内存从`0x7C00`的部分 （32Kb前的1Kb）。 如果设备拥有校验签名的话，BIOS将会将指令移动至`0x7C00`处 （通过跳转指令）以执行引导扇区的代码。
 
-Throughout this process the CPU has been running in 16-bit Real Mode, which is the default state for x86 CPUs in order to maintain backwards compatibility. To execute the 32-bit instructions within our kernel, a bootloader is required to switch the CPU into Protected Mode.
+到此为止CPU一致运行在16位实时模式下，这是x86CPU的默认模式，之所以这样是为了保证向后兼容性。现在，为了执行我们以32位指令编写的内核，引导程序必须将CPU转换成保护模式。
 
-#### What is GRUB?
+#### 什么是 GRUB？
 
-> GNU GRUB (short for GNU GRand Unified Bootloader) is a boot loader package from the GNU Project. GRUB is the reference implementation of the Free Software Foundation's Multiboot Specification, which provides a user the choice to boot one of multiple operating systems installed on a computer or select a specific kernel configuration available on a particular operating system's partitions.
+> GNU GRUB （GNU GRand Unified Bootloader） 是GNU项目的一个引导装载包。 GRUB 是参考自由软件基金会的多引导规范的一个实现，他为用户提供了一个选择界面以选取某个特定的已经安装的操作系统，或者安装在某个盘的相同操作系统的不同内核配置。
 
-To make it simple, GRUB is the first thing booted by the machine (a boot-loader) and will simplify the loading of our kernel stored on the hard-disk.
 
-#### Why are we using GRUB?
+简而言之， GRUB 是被计算机（引导装载器）装载的第一个 程序 而且将会明确哪一个系统内核最终会被我们从硬盘引导出来。
 
-* GRUB is very simple to use
-* Make it very simple to load 32bits kernels without needs of 16bits code
-* Multiboot with Linux, Windows and others
-* Make it easy to load external modules in memory
+#### 我们为什么使用GRUB？
 
-#### How to use GRUB?
+* GRUB 用起来十分简单
+* 可以完全不使用16位指令代码就可以装载32位系统内核。
+* 多引导选择启动Linux，Windows或者其他操作系统
+* 更容易将拓展模块装载到内存中
 
-GRUB uses the Multiboot specification, the executable binary should be 32bits and must contain a special header (multiboot header) in its 8192 first bytes. Our kernel will be a ELF executable file ("Executable and Linkable Format", a common standard file format for executables in most UNIX system).
+#### 如何使用 GRUB？
+
+GRUB 遵循多引导协议, 可执行二进制代码必须为32位而且必须在最初的8192字节包含铁定的多引导头。我们的内核必须为ELF可执行文件（"Executable and Linkable Format"，一个在大多数UNIX系统中通用的可执行文件的标准格式）。
 
 The first boot sequence of our kernel is written in Assembly: [start.asm](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System/blob/master/src/kernel/arch/x86/start.asm) and we use a linker file to define our executable structure: [linker.ld](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System/blob/master/src/kernel/arch/x86/linker.ld).
 
-This boot process also initializes some of our C++ runtime, it will be described in the next chapter.
+我们操作系统内核的第一个引导序列使用Assemble书写: [start.asm](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System/blob/master/src/kernel/arch/x86/start.asm) 我们使用链接文件定义我们的可执行结构 [linker.ld](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System/blob/master/src/kernel/arch/x86/linker.ld).
 
-Multiboot header structure:
+引导程序同样会初始化一些我们所使用的C++运行环境，这些将在下一章进行介绍
+
+多引导头结构体：
 
 ```cpp
 struct multiboot_info {
@@ -75,19 +76,20 @@ struct multiboot_info {
 };
 ```
 
-You can use the command ```mbchk kernel.elf``` to validate your kernel.elf file against the multiboot standard. You can also use the command ```nm -n kernel.elf``` to validate the offset of the different objects in the ELF binary.
+你可以使用命令 ```mbchk kernel.elf``` 以多引导标准校验你的kernal.elf
+同样可以使用命令 ```nm -n kernel.elf``` 校验ELF二进制代码中不同对象之间的距离。
 
-#### Create a disk image for our kernel and grub
+####为我们的内核和GRUB创建一个磁盘镜像
 
-The script [diskimage.sh](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System/blob/master/src/sdk/diskimage.sh) will generate a hard disk image that can be used by QEMU.
+脚本文件 [diskimage.sh](https://github.com/wencheng256/How-to-Make-a-Computer-Operating-System/blob/master/src/sdk/diskimage.sh) 会自动生成一个可以被QEMU使用的磁盘镜像
 
-The first step is to create a hard-disk image (c.img) using qemu-img:
+创建磁盘镜像(c.img) 的第一步是使用qumu-img命令:
 
 ```
 qemu-img create c.img 2M
 ```
 
-We need now to partition the disk using fdisk:
+我们现在要使用fdisk命令为这个disk进行分区：
 
 ```bash
 fdisk ./c.img
@@ -137,19 +139,20 @@ fdisk ./c.img
 
 We need now to attach the created partition to the loop-device using losetup. This allows a file to be access like a block device. The offset of the partition is passed as an argument and calculated using: **offset= start_sector * bytes_by_sector**.
 
-Using ```fdisk -l -u c.img```, you get: 63 * 512 = 32256.
+我们现在要使用loseup命令将创建好的分区装载到loop-device上。这样使一个文件可以向一个块状设备一样使用。 分区之间的间距被当做一个参数传入，计算方式如下 **间距= 起始扇区* 每个扇区的字节数量**.
+
+通过```fdisk -l -u c.img```, 得: 63 * 512 = 32256.
 
 ```bash
 losetup -o 32256 /dev/loop1 ./c.img
 ```
-
-We create a EXT2 filesystem on this new device using:
+使用以下命令在新设备上创建一个EXT2文件系统：
 
 ```bash
 mke2fs /dev/loop1
 ```
 
-We copy our files on a mounted disk:
+将盘挂载，然后拷贝你的文件：
 
 ```bash
 mount  /dev/loop1 /mnt/
@@ -157,7 +160,7 @@ cp -R bootdisk/* /mnt/
 umount /mnt/
 ```
 
-Install GRUB on the disk:
+在盘上安装GRUB：
 
 ```bash
 grub --device-map=/dev/null << EOF
@@ -169,13 +172,13 @@ quit
 EOF
 ```
 
-And finally we detach the loop device:
+最后我们释放这个虚拟设备：
 
 ```bash
 losetup -d /dev/loop1
 ```
 
-#### See Also
+#### 参考资料
 
 * [GNU GRUB on Wikipedia](http://en.wikipedia.org/wiki/GNU_GRUB)
 * [Multiboot specification](https://www.gnu.org/software/grub/manual/multiboot/multiboot.html)
