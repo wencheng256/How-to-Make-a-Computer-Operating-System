@@ -1,32 +1,32 @@
-## Chapter 7: IDT and interrupts
+##第七章: IDT 和中断
 
-An interrupt is a signal to the processor emitted by hardware or software indicating an event that needs immediate attention.
+中断是一种被硬件或者软件发送给处理器用来引起处理器注意的的信号。
 
-There are 3 types of interrupts:
+一共有三种类型的中断：
 
-- **Hardware interrupts:** are sent to the processor from an external device (keyboard, mouse, hard disk, ...). Hardware interrupts were introduced as a way to reduce wasting the processor's valuable time in polling loops, waiting for external events.
-- **Software interrupts:** are initiated voluntarily by the software. It's used to manage system calls.
-- **Exceptions:**  are used for errors or events occurring during program execution that are exceptional enough that they cannot be handled within the program itself (division by zero, page fault, ...)
+- **硬件中断：** 扩展设备（键盘、鼠标、硬盘等等）传输给处理器的中断 。硬件中断是一种减少cpu资源浪费在等待扩展设备响应做法。
+- **软件中断** 由软件触发，用来管理系统调用。
+- **异常：**  当程序运行当中发生了程序自身无法处理的异常时会抛出一个异常中断。
 
-#### The keyboard example:
+#### 例如键盘：
 
-When the user pressed a key on the keyboard, the keyboard controller will signal an interrupt to the Interrupt Controller. If the interrupt is not masked, the controller will signal the interrupt to the processor, the processor will execute a routine to manage the interrupt (key pressed or key released), this routine could, for example, get the pressed key from the keyboard controller and print the key to the screen. Once the character processing routine is completed, the interrupted job can be resumed.
+当用户按下键盘上一个按键，键盘控制器将会发送一个中断到中断控制器。如果中断没有被标记，则控制器将会向处理器发送这个中断，处理器将会执行一段程序处理中断（键盘按下或松开），比如这段程序可能从键盘控制器获取被按下的按键的信息然后在屏幕上打印出被按下的字母。 当字符处理程序被完成以后，刚刚被中断的工作就可以继续执行了。
 
-#### What is the PIC?
+#### 什么是PIC？
 
-The [PIC](http://en.wikipedia.org/wiki/Programmable_Interrupt_Controller) (Programmable interrupt controller)is a device that is used to combine several sources of interrupt onto one or more CPU lines, while allowing priority levels to be assigned to its interrupt outputs. When the device has multiple interrupt outputs to assert, it asserts them in the order of their relative priority.
+[PIC](http://en.wikipedia.org/wiki/Programmable_Interrupt_Controller) (Programmable interrupt controller 程序中断控制器)是一个能将多种来源的终端信息合成一条或者更多cpu指令的设备， 同时支持中断输出优先级的设置。当中断控制器同时收到了多个中断去处理，他会依据中断的相对优先级来排序。
 
-The best known PIC is the 8259A, each 8259A can handle 8 devices but most computers have two controllers: one master and one slave, this allows the computer to manage interrupts from 14 devices.
+最为出名的PIC是8259A，每个8259A可以处理8个设备，但大多数的电脑拥有两个控制器： 一主一从，这使得电脑可以同时管理14个设备的中断。
 
-In this chapter, we will need to program this controller to initialize and mask interrupts.
+本章中，我们将对控制器进行编程以对中断进行初始化和掩码。
 
-#### What is the IDT?
+#### 什么是 IDT？
 
-> The Interrupt Descriptor Table (IDT) is a data structure used by the x86 architecture to implement an interrupt vector table. The IDT is used by the processor to determine the correct response to interrupts and exceptions.
+> 中断描述表(IDT) 是x86架构机为实现中断向量表使用的数据结构。处理器使用根据IDT对中断和异常进行正确的返回。
 
-Our kernel is going to use the IDT to define the different functions to be executed when an interrupt occurred.
+我们的内核将使用IDT定义若干方法以处理中断。
 
-Like the GDT, the IDT is loaded using the LIDTL assembly instruction. It expects the location of a IDT description structure:
+就像GDT一样，IDT使用LIDT汇编指令进行装载，IDT内存地址结构如下：
 
 ```cpp
 struct idtr {
@@ -35,7 +35,7 @@ struct idtr {
 } __attribute__ ((packed));
 ```
 
-The IDT table is composed of IDT segments with the following structure:
+IDT表由以下结构的IDT区块组成：
 
 ```cpp
 struct idtdesc {
@@ -46,35 +46,35 @@ struct idtdesc {
 } __attribute__ ((packed));
 ```
 
-**Caution:** the directive ```__attribute__ ((packed))``` signal to gcc that the structure should use as little memory as possible. Without this directive, gcc includes some bytes to optimize the memory alignment and the access during execution.
+**注意:** ` __attribute__ ((packed))`指令用来引导gcc，这个结构体应该是用尽可能少的内存。如果没有这行代码，gcc会引入一些字节去优化执行时内存的分配和获取。
 
-Now we need to define our IDT table and then load it using LIDTL. The IDT table can be stored wherever we want in memory, its address should just be signaled to the process using the IDTR registry.
+现在我们需要定义我们的IDT表，然后使用LIDT进行装载。同GDR，IDT可以被放置到内存的任意位置，只要我们使用IDTR注册了IDT的地址，处理器就可以获取到。
 
-Here is a table of common interrupts (Maskable hardware interrupt are called IRQ):
+常见中断表如下（可屏蔽硬件中断被称作IRQ）:
 
 
 | IRQ   |         Description        |
 |:-----:| -------------------------- |
-| 0 | Programmable Interrupt Timer Interrupt |
-| 1 | Keyboard Interrupt |
-| 2 | Cascade (used internally by the two PICs. never raised) |
-| 3 | COM2 (if enabled) |
-| 4 | COM1 (if enabled) |
-| 5 | LPT2 (if enabled) |
-| 6 | Floppy Disk |
+| 0 | 可编程中断，定时器中断 |
+| 1 | 键盘中断 |
+| 2 | 瀑布流中断 (被两个PIC使用的内部中断 不会遇到) |
+| 3 | COM2 (如果存在的话) |
+| 4 | COM1 (如果存在的话) |
+| 5 | LPT2 (如果存在的话) |
+| 6 | 软盘 |
 | 7 | LPT1 |
-| 8 | CMOS real-time clock (if enabled) |
-| 9 | Free for peripherals / legacy SCSI / NIC |
-| 10 | Free for peripherals / SCSI / NIC |
-| 11 | Free for peripherals / SCSI / NIC |
-| 12 | PS2 Mouse |
-| 13 | FPU / Coprocessor / Inter-processor |
-| 14 | Primary ATA Hard Disk |
-| 15 | Secondary ATA Hard Disk |
+| 8 | CMOS 实时时钟 (如果存在的话) |
+| 9 | 供其他外设自由使用 / legacy SCSI / NIC |
+| 10 | 供其他外设自由使用  / SCSI / NIC |
+| 11 | 供其他外设自由使用  / SCSI / NIC |
+| 12 | PS2 鼠标 |
+| 13 | FPU / 协处理器 / Inter-processor |
+| 14 | 主 ATA 硬盘 |
+| 15 | 二级 ATA 硬盘 |
 
-#### How to initialize the interrupts?
+#### 如何初始化中断？
 
-This is a simple method to define an IDT segment
+这里有个定义IDT区块的简单方法：
 
 ```cpp
 void init_idt_desc(u16 select, u32 offset, u16 type, struct idtdesc *desc)
@@ -87,7 +87,7 @@ void init_idt_desc(u16 select, u32 offset, u16 type, struct idtdesc *desc)
 }
 ```
 
-And we can now initialize the interupts:
+我们现在可以初始化中断了：
 
 ```cpp
 #define IDTBASE	0x00000000
@@ -126,12 +126,15 @@ void init_idt(void)
 }
 ```
 
-After intialization of our IDT, we need to activate interrupts by configuring the PIC. The following function will configure the two PICs by writting in their internal registries using the output ports of the processor ```io.outb```. We configure the PICs using the ports:
+初始化了IDT之后，我们需要配置pic以让中断生效。以下的方法会使用程序的输出端口在两个PIC的注册表写入以配置它们。
 
-* Master PIC: 0x20 and 0x21
-* Slave PIC: 0xA0 and 0xA1
+```io.outb```. 我们使用这些端口配置PIC:
 
-For a PIC, there are 2 types of registries:
+
+* 主 PIC: 0x20 and 0x21
+* 从 PIC: 0xA0 and 0xA1
+
+每个PIC，有两种方式可以注册它们：
 
 * ICW (Initialization Command Word): reinit the controller
 * OCW (Operation Control Word): configure the controller once initialized (used to mask/unmask the interrupts)
