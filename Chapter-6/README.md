@@ -1,28 +1,28 @@
-## Chapter 6: GDT
+##第六章：GDT
 
-Thanks to GRUB, your kernel is no longer in real-mode, but already in [protected mode](http://en.wikipedia.org/wiki/Protected_mode), this mode allows us to use all the possibilities of the microprocessor such as virtual memory management, paging and safe multi-tasking.
+多亏了GRUB，我们的内核可以不用在16位下运行，并且早已进入了[保护模式](http://en.wikipedia.org/wiki/Protected_mode)，保护模式让可以让我们发挥微处理器的最大能力，比如虚拟内存管理，分页和安全的多任务。
 
-#### What is the GDT?
+#### 什么是 GDT？
 
-The [GDT](http://en.wikipedia.org/wiki/Global_Descriptor_Table) ("Global Descriptor Table") is a data structure used to define the different memory areas: the base address, the size and access privileges like execute and write. These memory areas are called "segments".
+[GDT](http://en.wikipedia.org/wiki/Global_Descriptor_Table) ("Global Descriptor Table")是一种用来定义不同内存区域的数据结构： 基础地址、大小、读写执行权限等等。这些内存分区被称作区块。
 
-We are going to use the GDT to define different memory segments:
+我们将使用GDT 定义不同的内存区块：
 
-* *"code"*: kernel code, used to stored the executable binary code
-* *"data"*: kernel data
-* *"stack"*: kernel stack, used to stored the call stack during kernel execution
-* *"ucode"*: user code, used to stored the executable binary code for user program
-* *"udata"*: user program data
-* *"ustack"*: user stack, used to stored the call stack during execution in userland
+* *"code"*: 内核代码区，用来存储可执行的二进制代码。
+* *"data"*: 内核数据区
+* *"stack"*: 内核栈区，用来存储内核执行时的调用栈
+* *"ucode"*: 用户代码区，用来存储用户程序的可执行二进制代码。
+* *"udata"*: 用户数据区
+* *"ustack"*: 用户栈区， 用来存储在用户区执行的调用栈
 
-#### How to load our GDT?
+#### 如何加载我们的 GDT？
 
-GRUB initializes a GDT but this GDT is does not correspond to our kernel.
-The GDT is loaded using the LGDT assembly instruction. It expects the location of a GDT description structure:
+GRUB 初始化了一个GDT，但这个GDT并不和我们的内核对应。
+使用汇编命令LGDT可以装在GDT。所描述的地址结构如下。
 
 ![GDTR](./gdtr.png)
 
-And the C structure:
+C定义的结构体如下：
 
 ```cpp
 struct gdtr {
@@ -31,15 +31,15 @@ struct gdtr {
 } __attribute__ ((packed));
 ```
 
-**Caution:** the directive ```__attribute__ ((packed))``` signal to gcc that the structure should use as little memory as possible. Without this directive, gcc include some bytes to optimize the memory alignment and the access during execution.
+**注意：** ```__attribute__ ((packed))```指令用来引导gcc，这个结构体应该是用尽可能少的内存。如果没有这行代码，gcc会引入一些字节去优化执行时内存的分配和获取。
 
-Now we need to define our GDT table and then load it using LGDT. The GDT table can be stored wherever we want in memory, its address should just be signaled to the process using the GDTR registry.
+我们现在去使用LGDT去定义和装载GDT表。GDT表可以被放置在内存中的任意地方， 它的内存地址应该使用GDTR注册到程序中。
 
-The GDT table is composed of segments with the following structure:
+GDT 表由下列结构描述的区块组成：
 
 ![GDTR](./gdtentry.png)
 
-And the C structure:
+使用C结构体描述如下：
 
 ```cpp
 struct gdtdesc {
@@ -53,17 +53,18 @@ struct gdtdesc {
 } __attribute__ ((packed));
 ```
 
-#### How to define our GDT table?
+#### 如何定义我们的GDT表？
 
-We need now to define our GDT in memory and finally load it using the GDTR registry.
+我们需要知道如何在内存中定义GDT，以及如何从GDTR注册中读取GDT。
 
-We are going to store our GDT at the address:
+我们将在以下地址放置我们的GDT表：
 
 ```cpp
 #define GDTBASE	0x00000800
 ```
 
-The function **init_gdt_desc** in [x86.cc](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System/blob/master/src/kernel/arch/x86/x86.cc) initialize a gdt segment descriptor.
+ **init_gdt_desc** in [x86.cc](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System/blob/master/src/kernel/arch/x86/x86.cc) 方法初始化了GDT"区块"的描述。
+
 
 ```cpp
 void init_gdt_desc(u32 base, u32 limite, u8 acces, u8 other, struct gdtdesc *desc)
@@ -79,7 +80,7 @@ void init_gdt_desc(u32 base, u32 limite, u8 acces, u8 other, struct gdtdesc *des
 }
 ```
 
-And the function **init_gdt** initialize the GDT, some parts of the below function will be explained later and are used for multitasking.
+ **init_gdt**方法初始化GDT，下面方法的一部分会在多任务的时候再次用到，到那时在进行介绍。
 
 ```cpp
 void init_gdt(void)
